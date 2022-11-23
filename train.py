@@ -22,12 +22,10 @@ def aug_np(nparray):
     for i in range(nparray.shape[0]):
         # random flip
         if random.uniform(0, 1) < 0.5:
-            nparray[i] = np.fliplr(nparray[i])    
+            nparray[i] = np.fliplr(nparray[i])
         if random.uniform(0, 1) < 0.5:
-            nparray[i] = np.flipud(nparray[i])    
-        # random rotation
-        r = random.randint(0, 3)
-        if r:
+            nparray[i] = np.flipud(nparray[i])
+        if r := random.randint(0, 3):
             nparray[i] = np.rot90(nparray[i], r)
         # color jitter
         br = random.randint(-RANDOM_BRIGHTNESS, RANDOM_BRIGHTNESS) / 100.
@@ -82,7 +80,13 @@ def get_fam(
     ):
     params = list(net.parameters())
     weight_softmax = np.squeeze(params[-2].data.cpu().numpy())
-    CAMs, fam_fs = returnFAM(features_blobs[0], weight_softmax, [i for i in range(weight_softmax.shape[0])], foremask)
+    CAMs, fam_fs = returnFAM(
+        features_blobs[0],
+        weight_softmax,
+        list(range(weight_softmax.shape[0])),
+        foremask,
+    )
+
 
     CAMs_list = []
     for i in range(len(CAMs)):
@@ -101,8 +105,7 @@ def print_cz(str, f=None):
 def time_mark():
     time_now = int(time.time())
     time_local = time.localtime(time_now)
-    dt = time.strftime('%Y%m%d-%H%M%S', time_local)
-    return(dt)
+    return time.strftime('%Y%m%d-%H%M%S', time_local)
 
 def expand_user(path):
     return os.path.abspath(os.path.expanduser(path))
@@ -120,18 +123,22 @@ def model_snapshot(model, new_file, old_file=None, save_dir='./', verbose=True, 
 
     if os.path.exists(save_dir) is False:
         os.makedirs(expand_user(save_dir))
-        print_cz(str='Make new dir:'+save_dir, f=log_file)
+        print_cz(str=f'Make new dir:{save_dir}', f=log_file)
     if isinstance(model, torch.nn.DataParallel):
         model = model.module
     for file in os.listdir(save_dir):
         if old_file in file:
             if verbose:
-                print_cz(str="Removing old model  {}".format(expand_user(save_dir + file)), f=log_file)
+                print_cz(str=f"Removing old model  {expand_user(save_dir + file)}", f=log_file)
             os.remove(save_dir + file) # 
     if verbose:
-        print_cz(str="Saving new model to {}".format(expand_user(save_dir + new_file)), f=log_file)
+        print_cz(
+            str=f"Saving new model to {expand_user(save_dir + new_file)}",
+            f=log_file,
+        )
+
     time.sleep(5)
-    torch.save(model.cpu().state_dict(),expand_user(save_dir + 'dict_'+new_file))
+    torch.save(model.cpu().state_dict(), expand_user(f'{save_dir}dict_{new_file}'))
     time.sleep(5)
     model.cuda()
 
@@ -146,7 +153,7 @@ def prepare():
 
     if os.path.exists(log_dir) is False:# make dir if not exist
         os.makedirs(expand_user(log_dir))
-        print('make dir: ' + str(log_dir))
+        print(f'make dir: {str(log_dir)}')
     return args,  log_dir
 
 def adjust_learning_rate(optimizer, lr, epoch, lr_step=40, lr_gamma=0.1):
@@ -270,21 +277,115 @@ def train(
         print_cz(" ", f=logfile)
 
         if epoch + 10 > epochs:
-            model_snapshot(extractor_fam, new_file=(
-                    pth_prefix+'extractorfam-last-{}-acc{:.3f}-f{:.3f}-kappa{:.3f}-mcc{:.3f}-gcn{:.1f}-tw{:.1f}-mids{:.1f}-bottoms{:.1f}-{}.pth'.format(epoch, test_top1, test_f1, test_kappa, test_mcc, test_kappa_gcn, test_kappa_tw, test_kappa_mids, test_kappa_bottoms, time_mark())
-                    ), old_file=pth_prefix + 'extractor-no-remove-', save_dir=save_path , verbose=True) # 
-            model_snapshot(extractor_tw, new_file=(
-                    pth_prefix+'extractortw-last-{}-acc{:.3f}-f{:.3f}-kappa{:.3f}-mcc{:.3f}-gcn{:.1f}-tw{:.1f}-mids{:.1f}-bottoms{:.1f}-{}.pth'.format(epoch, test_top1, test_f1, test_kappa, test_mcc, test_kappa_gcn, test_kappa_tw, test_kappa_mids, test_kappa_bottoms, time_mark())
-                    ), old_file=pth_prefix + 'extractor-no-remove-', save_dir=save_path , verbose=True) # 
-            model_snapshot(extractor_mid, new_file=(
-                    pth_prefix+'extractormid-last-{}-acc{:.3f}-f{:.3f}-kappa{:.3f}-mcc{:.3f}-gcn{:.1f}-tw{:.1f}-mids{:.1f}-bottoms{:.1f}-{}.pth'.format(epoch, test_top1, test_f1, test_kappa, test_mcc, test_kappa_gcn, test_kappa_tw, test_kappa_mids, test_kappa_bottoms, time_mark())
-                    ), old_file=pth_prefix + 'extractor-no-remove-', save_dir=save_path , verbose=True) # 
-            model_snapshot(extractor_bottom, new_file=(
-                    pth_prefix+'extractorbottom-last-{}-acc{:.3f}-f{:.3f}-kappa{:.3f}-mcc{:.3f}-gcn{:.1f}-tw{:.1f}-mids{:.1f}-bottoms{:.1f}-{}.pth'.format(epoch, test_top1, test_f1, test_kappa, test_mcc, test_kappa_gcn, test_kappa_tw, test_kappa_mids, test_kappa_bottoms, time_mark())
-                    ), old_file=pth_prefix + 'extractor-no-remove-', save_dir=save_path , verbose=True) # 
-            model_snapshot(aggregator, new_file=(
-                    pth_prefix+'aggregator-last-{}-acc{:.3f}-f{:.3f}-kappa{:.3f}-mcc{:.3f}-gcn{:.1f}-tw{:.1f}-mids{:.1f}-bottoms{:.1f}-{}.pth'.format(epoch, test_top1, test_f1, test_kappa, test_mcc,test_kappa_gcn, test_kappa_tw, test_kappa_mids, test_kappa_bottoms, time_mark())
-                    ), old_file=pth_prefix + 'aggregator-no-remove-', save_dir=save_path , verbose=True) # 
+            model_snapshot(
+                extractor_fam,
+                new_file=(
+                    pth_prefix
+                    + 'extractorfam-last-{}-acc{:.3f}-f{:.3f}-kappa{:.3f}-mcc{:.3f}-gcn{:.1f}-tw{:.1f}-mids{:.1f}-bottoms{:.1f}-{}.pth'.format(
+                        epoch,
+                        test_top1,
+                        test_f1,
+                        test_kappa,
+                        test_mcc,
+                        test_kappa_gcn,
+                        test_kappa_tw,
+                        test_kappa_mids,
+                        test_kappa_bottoms,
+                        time_mark(),
+                    )
+                ),
+                old_file=f'{pth_prefix}extractor-no-remove-',
+                save_dir=save_path,
+                verbose=True,
+            )
+
+            model_snapshot(
+                extractor_tw,
+                new_file=(
+                    pth_prefix
+                    + 'extractortw-last-{}-acc{:.3f}-f{:.3f}-kappa{:.3f}-mcc{:.3f}-gcn{:.1f}-tw{:.1f}-mids{:.1f}-bottoms{:.1f}-{}.pth'.format(
+                        epoch,
+                        test_top1,
+                        test_f1,
+                        test_kappa,
+                        test_mcc,
+                        test_kappa_gcn,
+                        test_kappa_tw,
+                        test_kappa_mids,
+                        test_kappa_bottoms,
+                        time_mark(),
+                    )
+                ),
+                old_file=f'{pth_prefix}extractor-no-remove-',
+                save_dir=save_path,
+                verbose=True,
+            )
+
+            model_snapshot(
+                extractor_mid,
+                new_file=(
+                    pth_prefix
+                    + 'extractormid-last-{}-acc{:.3f}-f{:.3f}-kappa{:.3f}-mcc{:.3f}-gcn{:.1f}-tw{:.1f}-mids{:.1f}-bottoms{:.1f}-{}.pth'.format(
+                        epoch,
+                        test_top1,
+                        test_f1,
+                        test_kappa,
+                        test_mcc,
+                        test_kappa_gcn,
+                        test_kappa_tw,
+                        test_kappa_mids,
+                        test_kappa_bottoms,
+                        time_mark(),
+                    )
+                ),
+                old_file=f'{pth_prefix}extractor-no-remove-',
+                save_dir=save_path,
+                verbose=True,
+            )
+
+            model_snapshot(
+                extractor_bottom,
+                new_file=(
+                    pth_prefix
+                    + 'extractorbottom-last-{}-acc{:.3f}-f{:.3f}-kappa{:.3f}-mcc{:.3f}-gcn{:.1f}-tw{:.1f}-mids{:.1f}-bottoms{:.1f}-{}.pth'.format(
+                        epoch,
+                        test_top1,
+                        test_f1,
+                        test_kappa,
+                        test_mcc,
+                        test_kappa_gcn,
+                        test_kappa_tw,
+                        test_kappa_mids,
+                        test_kappa_bottoms,
+                        time_mark(),
+                    )
+                ),
+                old_file=f'{pth_prefix}extractor-no-remove-',
+                save_dir=save_path,
+                verbose=True,
+            )
+
+            model_snapshot(
+                aggregator,
+                new_file=(
+                    pth_prefix
+                    + 'aggregator-last-{}-acc{:.3f}-f{:.3f}-kappa{:.3f}-mcc{:.3f}-gcn{:.1f}-tw{:.1f}-mids{:.1f}-bottoms{:.1f}-{}.pth'.format(
+                        epoch,
+                        test_top1,
+                        test_f1,
+                        test_kappa,
+                        test_mcc,
+                        test_kappa_gcn,
+                        test_kappa_tw,
+                        test_kappa_mids,
+                        test_kappa_bottoms,
+                        time_mark(),
+                    )
+                ),
+                old_file=f'{pth_prefix}aggregator-no-remove-',
+                save_dir=save_path,
+                verbose=True,
+            ) 
 
 
 def train_a_epoch(train_loader, 

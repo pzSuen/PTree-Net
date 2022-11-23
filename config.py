@@ -54,8 +54,7 @@ def get_args():
     parser.add_argument('--pool_type', default=None, type=str, help='what pool to replace RNN')
     parser.add_argument('--pool_attention', default=0, type=int, help='whether use attention for pooling')
 
-    args = parser.parse_args()
-    return args
+    return parser.parse_args()
 
 if __name__ == '__main__':
     import json

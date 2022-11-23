@@ -23,30 +23,31 @@ def loc_transfer_levels(location_orig, level_orig, level_target):
         int((location_orig[1]+1)*config.scale_dict_checked[level_target]/config.scale_dict_checked[level_orig] - 1)
         )
 
-def loc_transfer_levels_list(location_orig_list, level_orig, level_target): 
+def loc_transfer_levels_list(location_orig_list, level_orig, level_target):
     """level of several images
     level_orig, level_target: str"""
-    location_target_list = []
-    for location_orig in location_orig_list:
-        location_target_list.append(
-            loc_transfer_levels(
-                location_orig=location_orig, level_orig=level_orig, 
-                level_target=level_target)
+    return [
+        loc_transfer_levels(
+            location_orig=location_orig,
+            level_orig=level_orig,
+            level_target=level_target,
         )
-    return location_target_list
+        for location_orig in location_orig_list
+    ]
 
 def get_wsi_handle(filepath):
-    wsi_handle = openslide.OpenSlide(filepath)
-    return wsi_handle
+    return openslide.OpenSlide(filepath)
 
 def load_whole_level(wsi_handle, level): 
-    # level=0, means the largest slide
-    # wsi_handle = openslide.OpenSlide(filepath)
-    slide_level = np.array(
-        wsi_handle.read_region((0, 0), 
-        config.scale_openslide_dict_checked[level], 
-        wsi_handle.level_dimensions[config.scale_openslide_dict_checked[level]]))[:, :, :3] # the 4-th channel is empty
-    return slide_level
+    return np.array(
+        wsi_handle.read_region(
+            (0, 0),
+            config.scale_openslide_dict_checked[level],
+            wsi_handle.level_dimensions[
+                config.scale_openslide_dict_checked[level]
+            ],
+        )
+    )[:, :, :3]
 
 ###############
 def slide_loc(location_orig, level_orig):
@@ -55,20 +56,18 @@ def slide_loc(location_orig, level_orig):
     return (slide_loc_0, slide_loc_1)
 
 def slide_loc_list(location_orig_list, level_orig):
-    slide_loc_list = []
-    for location_orig in location_orig_list:
-        slide_loc_list.append(
-            slide_loc(location_orig=location_orig, level_orig=level_orig)
-        )
-    return slide_loc_list
+    return [
+        slide_loc(location_orig=location_orig, level_orig=level_orig)
+        for location_orig in location_orig_list
+    ]
 
 def patchC_loc_list(locationC, psizeS):
-    loc_list = []
-    loc_list.append((locationC[0]-int(psizeS/2), locationC[1]-int(psizeS/2)))
-    loc_list.append((locationC[0]-int(psizeS/2), locationC[1]+int(psizeS/2)))
-    loc_list.append((locationC[0]+int(psizeS/2), locationC[1]-int(psizeS/2)))
-    loc_list.append((locationC[0]+int(psizeS/2), locationC[1]+int(psizeS/2)))
-    return loc_list
+    return [
+        (locationC[0] - int(psizeS / 2), locationC[1] - int(psizeS / 2)),
+        (locationC[0] - int(psizeS / 2), locationC[1] + int(psizeS / 2)),
+        (locationC[0] + int(psizeS / 2), locationC[1] - int(psizeS / 2)),
+        (locationC[0] + int(psizeS / 2), locationC[1] + int(psizeS / 2)),
+    ]
 
 def crop_locationCS_patch(wsi_handle, level, locationCS, psizeS, psize):
     """
@@ -125,8 +124,7 @@ def crop_locationCS_patches(wsi_handle, level, locationCS_list, psizeS, psize):
 def local2global_loc(local_loc, center_loc, half_side):
     loc0 = local_loc[0] + center_loc[0] + 1 - half_side
     loc1 = local_loc[1] + center_loc[1] + 1 - half_side
-    global_loc = (int(loc0), int(loc1))
-    return global_loc
+    return int(loc0), int(loc1)
 
 def local_list2global_loc(local_loc_list, center_loc, half_side):
     global_loc_list = []
