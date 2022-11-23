@@ -28,7 +28,7 @@ class Dataset_Online_WSI(data.Dataset):
         super(Dataset_Online_WSI, self).__init__()
         self.folder = config.slide_all
         self.mask_folder = config.mask_folder_all
-        
+
         df_all = pd.read_csv(config.csv_all)
         split_num_all = int(len(df_all)/splits)
 
@@ -53,7 +53,7 @@ class Dataset_Online_WSI(data.Dataset):
 
         target = int(self.targets[index])
         if target > 0.5:
-            target = target-1    
+            target -= 1    
 
         wsi_filepath = os.path.join(self.folder, self.wsi_names[index])
         wsi_handle = openslide.OpenSlide(wsi_filepath)
@@ -86,14 +86,14 @@ def get_dataloader(stage, test_split, wsi_shuffle, num_workers=1):
             stage='train', test_split=test_split
             )
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=wsi_shuffle, num_workers=num_workers, pin_memory=False)
-        
+
     elif stage in ['test', 'Test']:
         print('build WSI test dataset with {:d} num_workers, batch size 1.'.format(num_workers))
         dataset = Dataset_Online_WSI(
             stage='test', test_split=test_split
             )
         dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=wsi_shuffle, num_workers=num_workers, pin_memory=False)
-        
+
     return dataloader
 
 if __name__ == '__main__':
@@ -110,5 +110,5 @@ if __name__ == '__main__':
         if i > 10:
             break
         print(i, wsi_filepath, target, wsi_name)
-    
+
     print(len(test_loader))

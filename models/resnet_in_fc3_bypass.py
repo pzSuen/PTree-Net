@@ -40,17 +40,14 @@ class BasicBlock(nn.Module):
         self.downsample = downsample
 
     def forward(self, x):
-        if self.downsample is not None:
-            residual = self.downsample(x)
-        else:
-            residual = x
+        residual = self.downsample(x) if self.downsample is not None else x
         out = self.conv1(x)
         out = self.in1(out)
         out = self.relu1(out)
 
         out = self.conv2(out)
         out = self.in2(out)
-        
+
         out = out + residual
         out = self.relu(out)
         return out
@@ -73,11 +70,7 @@ class Bottleneck(nn.Module):
         self.downsample = downsample
 
     def forward(self, x):
-        if self.downsample is not None:
-            residual = self.downsample(x)
-        else:
-            residual = x
-        
+        residual = self.downsample(x) if self.downsample is not None else x
         out = self.conv1(x)
         out = self.in1(out)
         out = self.relu1(out)
@@ -130,11 +123,21 @@ class ResNet(nn.Module):
                 nn.InstanceNorm2d(planes * block.expansion, affine=self.instance_affine),
             )
 
-        layers = []
-        layers.append(block(self.inplanes, planes, stride, downsample, instance_affine=self.instance_affine))
+        layers = [
+            block(
+                self.inplanes,
+                planes,
+                stride,
+                downsample,
+                instance_affine=self.instance_affine,
+            )
+        ]
+
         self.inplanes = planes * block.expansion
-        for i in range(1, blocks):
-            layers.append(block(self.inplanes, planes, instance_affine=self.instance_affine))
+        layers.extend(
+            block(self.inplanes, planes, instance_affine=self.instance_affine)
+            for _ in range(1, blocks)
+        )
 
         return nn.Sequential(*layers)
 
